@@ -12,6 +12,7 @@ void correlate(int ny, int nx, const float* data, float* result) {
     int nc = (ny + 3) / 4;
     int ncd = nc * 4; // rows after padding (blocks of 4)
     double4_t* paralell_vectors = double4_alloc(nx * ncd);
+    #pragma omp parallel for schedule(static, 1)
     for (int row = 0; row < ny ; row ++)
     {
         double4_t sum = {0.0, 0.0, 0.0, 0.0};
@@ -25,118 +26,116 @@ void correlate(int ny, int nx, const float* data, float* result) {
                 int column = count * nb + i;
                 if ((count == vector_count) && (i>= values_rest))
                 {
-                    paralell_vectors[vector_count*row + count + row][i] = 0;
+                    paralell_vectors[vector_count*row + count + row][i] = 0;    // padding with 0s
                 }
                 else{
-                    paralell_vectors[vector_count*row + count + row][i] = data[column + row * nx];
+                    paralell_vectors[vector_count*row + count + row][i] = data[column + row * nx]; // parallelize input data 
                 }
             }
             double4_t x = paralell_vectors[vector_count*row + count + row];
             sum += x;
-            square_sum += x * x;
         }
         for (int i = 0; i < nb; i++)
         {
-            sumsum += sum[i];
-            square_sumsum += square_sum[i];
+            sumsum += sum[i];   // calculate sum
         }
-        double mean = sumsum / nx;
-        double mult = 1 / std::sqrt((square_sumsum - sumsum*mean));
+        double mean = sumsum / nx; // calculate mean
 
         for (int count = 0; count <= vector_count; count++)
         {
             paralell_vectors[vector_count*row + count + row] -= mean;
             for (int i = 0; i < nb; i++)
             {
-                
                 if ((count == vector_count) && (i>= values_rest))
                 {
-                    paralell_vectors[vector_count*row + count + row][i] = 0;
+                    paralell_vectors[vector_count*row + count + row][i] = 0; // padding with 0s again
                 }
             }
-            paralell_vectors[vector_count*row + count + row] *= mult;
+            square_sum += paralell_vectors[vector_count*row + count + row] * paralell_vectors[vector_count*row + count + row]; 
+        }
+        for (int i = 0; i < nb; i++)
+        {
+            square_sumsum += square_sum[i]; // calculating square sum
+        }
+        square_sumsum = sqrt(square_sumsum);
+        for (int count = 0; count <= vector_count; count++)
+        {
+            paralell_vectors[vector_count*row + count + row] /= square_sumsum; // final normalization
         }
     }
-
+    #pragma omp parallel for schedule(static, 1)
     for (int row = ny; row < ncd ; row ++)
     {
         for (int count = 0; count <= vector_count; count++)
         {
             for (int i = 0; i < nb; i++)
             {
-                paralell_vectors[vector_count*row + count + row][i] = 0;
+                paralell_vectors[vector_count*row + count + row][i] = 0; // padding rows with 0s to have rows%4 = 0
             }
         }
     }
 
-
-
     #pragma omp parallel for schedule(static, 1)
     for (int row1 = 0; row1 < ncd; row1+=4)
     {
+        double4_t sor[4], oszlop[4];
         for (int row2 = row1; row2 < ncd; row2+=4)
             {
-                double sumsum1 = 0;
                 double4_t summa1 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum2 = 0;
                 double4_t summa2 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum3 = 0;
                 double4_t summa3 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum4 = 0;
                 double4_t summa4 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum5 = 0;
                 double4_t summa5 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum6 = 0;
                 double4_t summa6 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum7 = 0;
                 double4_t summa7 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum8 = 0;
                 double4_t summa8 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum9 = 0;
                 double4_t summa9 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum10 = 0;
                 double4_t summa10 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum11 = 0;
                 double4_t summa11 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum12 = 0;
                 double4_t summa12 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum13 = 0;
                 double4_t summa13 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum14 = 0;
                 double4_t summa14 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum15 = 0;
                 double4_t summa15 = {0.0, 0.0, 0.0, 0.0};
-                double sumsum16 = 0;
                 double4_t summa16 = {0.0, 0.0, 0.0, 0.0};
+                double sumsum1 = 0;
+                double sumsum2 = 0;
+                double sumsum3 = 0;
+                double sumsum4 = 0;
+                double sumsum5 = 0;
+                double sumsum6 = 0;
+                double sumsum7 = 0;
+                double sumsum8 = 0;
+                double sumsum9 = 0;
+                double sumsum10 = 0;
+                double sumsum11 = 0;
+                double sumsum12 = 0;
+                double sumsum13 = 0;
+                double sumsum14 = 0;
+                double sumsum15 = 0;
+                double sumsum16 = 0;
                 for (int count = 0; count <= vector_count; count++)
                 {
-                    double4_t sor1 = paralell_vectors[vector_count*(row1) + count + row1];
-                    double4_t sor2 = paralell_vectors[vector_count*(row1+1) + count + row1+1];
-                    double4_t sor3 = paralell_vectors[vector_count*(row1+2)  + count + row1+2];
-                    double4_t sor4 = paralell_vectors[vector_count*(row1+3)  + count + row1+3];
-                    double4_t oszlop1 = paralell_vectors[vector_count*(row2) + count + row2];
-                    double4_t oszlop2 = paralell_vectors[vector_count*(row2+1) + count + row2+1];
-                    double4_t oszlop3 = paralell_vectors[vector_count*(row2+2) + count + row2+2];
-                    double4_t oszlop4 = paralell_vectors[vector_count*(row2+3) + count + row2+3];
-                    summa1 += sor1 * oszlop1;
-                    summa2 += sor2 * oszlop2;
-                    summa3 += sor3 * oszlop3;
-                    summa4 += sor4 * oszlop4;
-
-                    summa5 += sor1 * oszlop2;
-                    summa6 += sor1 * oszlop3;
-                    summa7 += sor1 * oszlop4;
-                    summa8 += sor2 * oszlop1;
-
-                    summa9 += sor2 * oszlop3;
-                    summa10 += sor2 * oszlop4;
-                    summa11 += sor3 * oszlop1;
-                    summa12 += sor3 * oszlop2;
-
-                    summa13 += sor3 * oszlop4;
-                    summa14 += sor4 * oszlop1;
-                    summa15 += sor4 * oszlop2;
-                    summa16 += sor4 * oszlop3;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        sor[i] = paralell_vectors[vector_count*(row1 + i) + count + row1 + i];
+                        oszlop[i] = paralell_vectors[vector_count*(row2 + i) + count + row2 + i];
+                    }
+                    summa1 += sor[0] * oszlop[0];
+                    summa2 += sor[1] * oszlop[1];
+                    summa3 += sor[2] * oszlop[2];
+                    summa4 += sor[3] * oszlop[3];
+                    summa5 += sor[0] * oszlop[1];
+                    summa6 += sor[0] * oszlop[2];
+                    summa7 += sor[0] * oszlop[3];
+                    summa8 += sor[1] * oszlop[0];
+                    summa9 += sor[1] * oszlop[2];
+                    summa10 += sor[1] * oszlop[3];
+                    summa11 += sor[2] * oszlop[0];
+                    summa12 += sor[2] * oszlop[1];
+                    summa13 += sor[2] * oszlop[3];
+                    summa14 += sor[3] * oszlop[0];
+                    summa15 += sor[3] * oszlop[1];
+                    summa16 += sor[3] * oszlop[2];
                 }
                 for (int i = 0; i < nb; i++)
                 {
@@ -235,9 +234,6 @@ void correlate(int ny, int nx, const float* data, float* result) {
                 }
             }
     }
-
-
-
 std::free(paralell_vectors);
 }
 
