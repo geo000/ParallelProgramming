@@ -7,6 +7,7 @@
 
 void correlate(int ny, int nx, const float* data, float* result) {
     constexpr int nb = 8;
+    constexpr int ni = 8;
     int vector_count = nx / nb;
     int values_rest = nx % nb;
     int nc = (ny + 3) / 4;
@@ -78,7 +79,7 @@ void correlate(int ny, int nx, const float* data, float* result) {
     #pragma omp parallel for schedule(static, 1)
     for (int row1 = 0; row1 < ncd; row1+=4)
     {
-        float8_t sor[4], oszlop[4];
+        float8_t sor[ni], oszlop[ni];
         for (int row2 = row1; row2 < ncd; row2+=4)
             {
                 float8_t summa1 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -115,27 +116,27 @@ void correlate(int ny, int nx, const float* data, float* result) {
                 float sumsum16 = 0;
                 for (int count = 0; count <= vector_count; count++)
                 {
-                    for (int i = 0; i < 4; i++)
+                    for (int i = 0; i < ni; i++)
                     {
                         sor[i] = paralell_vectors[vector_count*(row1 + i) + count + row1 + i];
                         oszlop[i] = paralell_vectors[vector_count*(row2 + i) + count + row2 + i];
                     }
                     summa1 += sor[0] * oszlop[0];
-                    summa2 += sor[1] * oszlop[1];
-                    summa3 += sor[2] * oszlop[2];
-                    summa4 += sor[3] * oszlop[3];
-                    summa5 += sor[0] * oszlop[1];
-                    summa6 += sor[0] * oszlop[2];
-                    summa7 += sor[0] * oszlop[3];
-                    summa8 += sor[1] * oszlop[0];
-                    summa9 += sor[1] * oszlop[2];
-                    summa10 += sor[1] * oszlop[3];
-                    summa11 += sor[2] * oszlop[0];
-                    summa12 += sor[2] * oszlop[1];
-                    summa13 += sor[2] * oszlop[3];
-                    summa14 += sor[3] * oszlop[0];
-                    summa15 += sor[3] * oszlop[1];
-                    summa16 += sor[3] * oszlop[2];
+                    summa2 += sor[0] * oszlop[1];
+                    summa3 += sor[0] * oszlop[2];
+                    summa4 += sor[0] * oszlop[3];
+                    summa5 += sor[1] * oszlop[0];
+                    summa6 += sor[1] * oszlop[1];
+                    summa7 += sor[1] * oszlop[2];
+                    summa8 += sor[1] * oszlop[3];
+                    summa9 += sor[2] * oszlop[0];
+                    summa10 += sor[2] * oszlop[1];
+                    summa11 += sor[2] * oszlop[2];
+                    summa12 += sor[2] * oszlop[3];
+                    summa13 += sor[3] * oszlop[0];
+                    summa14 += sor[3] * oszlop[1];
+                    summa15 += sor[3] * oszlop[2];
+                    summa16 += sor[3] * oszlop[3];
                 }
                 for (int i = 0; i < nb; i++)
                 {
@@ -164,72 +165,72 @@ void correlate(int ny, int nx, const float* data, float* result) {
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + row1 * ny] = sumsum5;
+                        result[row2+1 + row1 * ny] = sumsum2;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + row1 * ny] = sumsum6;
+                        result[row2+2 + row1 * ny] = sumsum3;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + row1 * ny] = sumsum7;
+                        result[row2+3 + row1 * ny] = sumsum4;
                     }
                 }
                 if (row1+1 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+1) * ny] = sumsum8;
+                        result[row2 + (row1+1) * ny] = sumsum5;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+1) * ny] = sumsum2;
+                        result[row2+1 + (row1+1) * ny] = sumsum6;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+1) * ny] = sumsum9;
+                        result[row2+2 + (row1+1) * ny] = sumsum7;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+1) * ny] = sumsum10;
+                        result[row2+3 + (row1+1) * ny] = sumsum8;
                     }
                 }
                 if (row1+2 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+2) * ny] = sumsum11;
+                        result[row2 + (row1+2) * ny] = sumsum9;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+2) * ny] = sumsum12;
+                        result[row2+1 + (row1+2) * ny] = sumsum10;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+2) * ny] = sumsum3;
+                        result[row2+2 + (row1+2) * ny] = sumsum11;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+2) * ny] = sumsum13;
+                        result[row2+3 + (row1+2) * ny] = sumsum12;
                     }
                 }
                 if (row1+3 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+3) * ny] = sumsum14;
+                        result[row2 + (row1+3) * ny] = sumsum13;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+3) * ny] = sumsum15;
+                        result[row2+1 + (row1+3) * ny] = sumsum14;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+3) * ny] = sumsum16;
+                        result[row2+2 + (row1+3) * ny] = sumsum15;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+3) * ny] = sumsum4;
+                        result[row2+3 + (row1+3) * ny] = sumsum16;
                     }
                 }
             }
