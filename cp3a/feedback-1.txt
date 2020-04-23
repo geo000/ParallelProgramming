@@ -1,0 +1,9 @@
+0
+
+That's a good start! Improving performance will require reducing memory loads compared to
+arithmetic. This can be done using various register and cache blocking
+techniques.
+
+--
+Grading by:
+ivan
