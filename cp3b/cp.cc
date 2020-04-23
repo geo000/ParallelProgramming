@@ -6,17 +6,17 @@
 #include <numeric>
 
 void correlate(int ny, int nx, const float* data, float* result) {
-    constexpr int nb = 4;
+    constexpr int nb = 8;
     int vector_count = nx / nb;
     int values_rest = nx % nb;
     int nc = (ny + 3) / 4;
     int ncd = nc * 4; // rows after padding (blocks of 4)
-    float4_t* paralell_vectors = float4_alloc(nx * ncd);
+    float8_t* paralell_vectors = float8_alloc(nx * ncd);
     #pragma omp parallel for schedule(static, 1)
     for (int row = 0; row < ny ; row ++)
     {
-        float4_t sum = {0.0, 0.0, 0.0, 0.0};
-        float4_t square_sum = {0.0, 0.0, 0.0, 0.0};
+        float8_t sum = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        float8_t square_sum = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         float sumsum = 0;
         float square_sumsum = 0;
         for (int count = 0; count <= vector_count; count++)
@@ -32,7 +32,7 @@ void correlate(int ny, int nx, const float* data, float* result) {
                     paralell_vectors[vector_count*row + count + row][i] = data[column + row * nx]; // parallelize input data 
                 }
             }
-            float4_t x = paralell_vectors[vector_count*row + count + row];
+            float8_t x = paralell_vectors[vector_count*row + count + row];
             sum += x;
         }
         for (int i = 0; i < nb; i++)
@@ -78,25 +78,25 @@ void correlate(int ny, int nx, const float* data, float* result) {
     #pragma omp parallel for schedule(static, 1)
     for (int row1 = 0; row1 < ncd; row1+=4)
     {
-        float4_t sor[4], oszlop[4];
+        float8_t sor[4], oszlop[4];
         for (int row2 = row1; row2 < ncd; row2+=4)
             {
-                float4_t summa1 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa2 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa3 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa4 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa5 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa6 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa7 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa8 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa9 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa10 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa11 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa12 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa13 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa14 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa15 = {0.0, 0.0, 0.0, 0.0};
-                float4_t summa16 = {0.0, 0.0, 0.0, 0.0};
+                float8_t summa1 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa2 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa3 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa4 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa5 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa6 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa7 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa8 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa9 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa10 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa11 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa12 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa13 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa14 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa15 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                float8_t summa16 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
                 float sumsum1 = 0;
                 float sumsum2 = 0;
                 float sumsum3 = 0;
@@ -160,76 +160,76 @@ void correlate(int ny, int nx, const float* data, float* result) {
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + row1 * ny] = (float) sumsum1;
+                        result[row2 + row1 * ny] = sumsum1;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + row1 * ny] = (float) sumsum5;
+                        result[row2+1 + row1 * ny] = sumsum5;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + row1 * ny] = (float) sumsum6;
+                        result[row2+2 + row1 * ny] = sumsum6;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + row1 * ny] = (float) sumsum7;
+                        result[row2+3 + row1 * ny] = sumsum7;
                     }
                 }
                 if (row1+1 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+1) * ny] = (float) sumsum8;
+                        result[row2 + (row1+1) * ny] = sumsum8;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+1) * ny] = (float) sumsum2;
+                        result[row2+1 + (row1+1) * ny] = sumsum2;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+1) * ny] = (float) sumsum9;
+                        result[row2+2 + (row1+1) * ny] = sumsum9;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+1) * ny] = (float) sumsum10;
+                        result[row2+3 + (row1+1) * ny] = sumsum10;
                     }
                 }
                 if (row1+2 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+2) * ny] = (float) sumsum11;
+                        result[row2 + (row1+2) * ny] = sumsum11;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+2) * ny] = (float) sumsum12;
+                        result[row2+1 + (row1+2) * ny] = sumsum12;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+2) * ny] = (float) sumsum3;
+                        result[row2+2 + (row1+2) * ny] = sumsum3;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+2) * ny] = (float) sumsum13;
+                        result[row2+3 + (row1+2) * ny] = sumsum13;
                     }
                 }
                 if (row1+3 < ny)
                 {
                     if (row2 < ny)
                     {
-                        result[row2 + (row1+3) * ny] = (float) sumsum14;
+                        result[row2 + (row1+3) * ny] = sumsum14;
                     }
                     if (row2+1 < ny)
                     {
-                        result[row2+1 + (row1+3) * ny] = (float) sumsum15;
+                        result[row2+1 + (row1+3) * ny] = sumsum15;
                     }
                     if (row2+2 < ny)
                     {
-                        result[row2+2 + (row1+3) * ny] = (float) sumsum16;
+                        result[row2+2 + (row1+3) * ny] = sumsum16;
                     }
                     if (row2+3 < ny)
                     {
-                        result[row2+3 + (row1+3) * ny] = (float) sumsum4;
+                        result[row2+3 + (row1+3) * ny] = sumsum4;
                     }
                 }
             }
