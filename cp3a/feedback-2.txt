@@ -1,0 +1,8 @@
+0
+
+Looks good!
+For better performance you could implement ideas from Chapter 2 V5-V7. Particularly swaps and prefetching.
+
+--
+Grading by:
+ivan
