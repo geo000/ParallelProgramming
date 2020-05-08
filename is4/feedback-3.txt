@@ -1,0 +1,10 @@
+0
+
+Good start!
+Divisions are much more expensive than multiplications. So it is better to precompute the inverses 1.0/pixel_x 1.0/pixel_y.
+Task description contains the hint about simplification of "best" calculation, you need to reduce the number of arithmetic operations there as it is the most compute intensive part of the code.
+You could use vector types as in CP2c for further performance.
+
+--
+Grading by:
+ivan
