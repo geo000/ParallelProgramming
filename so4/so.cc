@@ -42,7 +42,8 @@ void mergeSort(data_t* data, int input_size)
     #pragma omp parallel num_threads(round_down)
     {
         int thread_num = omp_get_thread_num();
-        sort(data + min(thread_num * block_size, input_size), data + min((thread_num+1) * block_size, input_size));
+        int thread_num_next = thread_num + 1;
+        sort(data + min(thread_num * block_size, input_size), data + min(thread_num_next * block_size, input_size));
     }
     round_down >>= 1;
     do
@@ -50,8 +51,10 @@ void mergeSort(data_t* data, int input_size)
         #pragma omp parallel num_threads(round_down)
         {
             int thread_num = omp_get_thread_num() << 1;
-            inplace_merge(data + thread_num * block_size, data + min((thread_num+1) * block_size, input_size),
-                          data + min((thread_num+2) * block_size, input_size));
+            int thread_num_middle = thread_num + 1;
+            int thread_num_next = thread_num + 2;
+            inplace_merge(data + thread_num * block_size, data + min(thread_num_middle * block_size, input_size),
+                          data + min(thread_num_next * block_size, input_size));
         }
     block_size <<= 1;
     round_down >>= 1;
