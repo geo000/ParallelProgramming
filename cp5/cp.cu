@@ -73,7 +73,7 @@ void correlate(int ny, int nx, const float* data, float* result) {
 
     // Run kernel
 
-    dim3 dimBlock(8, 8);
+    dim3 dimBlock(32, 32);
     dim3 dimGrid(divup(ny, dimBlock.x), divup(ny, dimBlock.y));
     mykernel<<<dimGrid, dimBlock>>>(ny, nx, dGPU, dGPU_transpose, rGPU);
     CHECK(cudaGetLastError());
