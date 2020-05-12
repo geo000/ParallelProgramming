@@ -23,21 +23,21 @@ static inline int divup(int a, int b) {
     return (a + b - 1)/b;
 }
 
-__global__ void mykernel(int ny, int nx, float* norm_data, float* result) {
+__global__ void mykernel(int ny, int nx, float* norm_data, float* norm_data_transpose, float* result) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if (i >= ny || j >= ny || j < i)
         return;
     float sumx = 0;
     for (int k = 0; k < nx; k++){
-        sumx += norm_data[k + i * nx] * norm_data[k + j * nx];
+        sumx += norm_data_transpose[i + k * ny] * norm_data[k + j * nx];
     }
     result[j + i * ny] = sumx;
 }
 
 void correlate(int ny, int nx, const float* data, float* result) {
-
     float *interm_data= (float *)malloc(sizeof(float)*ny*nx);
+    float *interm_data_transpose= (float *)malloc(sizeof(float)*ny*nx);
     for (int row = 0; row < ny ; row ++)
     {
         float sum = 0;
@@ -56,29 +56,35 @@ void correlate(int ny, int nx, const float* data, float* result) {
         square_sum = sqrt(square_sum);
         for(int column = 0; column < nx; column++) {
             interm_data[column + row * nx] /= square_sum;
+            interm_data_transpose[row + column * ny] = interm_data[column + row * nx];
         }
     }
 
     // Allocate memory & copy data to GPU
 
     float* dGPU = NULL;
+    float* dGPU_transpose = NULL;
     CHECK(cudaMalloc((void**)&dGPU, nx * ny * sizeof(float)));
+    CHECK(cudaMalloc((void**)&dGPU_transpose, nx * ny * sizeof(float)));
     float* rGPU = NULL;
     CHECK(cudaMalloc((void**)&rGPU, ny * ny * sizeof(float)));
     CHECK(cudaMemcpy(dGPU, interm_data, nx * ny * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(dGPU_transpose, interm_data_transpose, nx * ny * sizeof(float), cudaMemcpyHostToDevice));
 
     // Run kernel
 
-    dim3 dimBlock(16, 16);
+    dim3 dimBlock(8, 8);
     dim3 dimGrid(divup(ny, dimBlock.x), divup(ny, dimBlock.y));
-    mykernel<<<dimGrid, dimBlock>>>(ny, nx, dGPU, rGPU);
+    mykernel<<<dimGrid, dimBlock>>>(ny, nx, dGPU, dGPU_transpose, rGPU);
     CHECK(cudaGetLastError());
 
     // Copy data back to CPU & release memory
 
     CHECK(cudaMemcpy(result, rGPU, ny * ny * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaFree(dGPU));
+    CHECK(cudaFree(dGPU_transpose));
     CHECK(cudaFree(rGPU));
 
     free(interm_data);
+    free(interm_data_transpose);
 }
