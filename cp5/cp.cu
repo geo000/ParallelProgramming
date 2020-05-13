@@ -7,6 +7,16 @@
 #include <cstdlib>
 #include <iostream>
 #include <cuda_runtime.h>
+#include <sys/time.h>
+#include <iostream>
+
+
+static inline int divup(int a, int b) {
+    return (a + b - 1)/b;
+}
+static inline int roundup(int a, int b) {
+    return divup(a, b) * b;
+}
 
 static inline void check(cudaError_t err, const char* context) {
     if (err != cudaSuccess) {
@@ -17,11 +27,6 @@ static inline void check(cudaError_t err, const char* context) {
 }
 
 #define CHECK(x) check(x, #x)
-
-static inline int divup(int a, int b) {
-
-    return (a + b - 1)/b;
-}
 
 __global__ void mykernel(int ny, int nx, float* norm_data, float* norm_data_transpose, float* result) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -35,9 +40,16 @@ __global__ void mykernel(int ny, int nx, float* norm_data, float* norm_data_tran
     result[j + i * ny] = sumx;
 }
 
+__global__ void mykernel_transpose(int ny, int nx, float* norm_data, float* norm_data_transpose) {
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
+    if (i >= ny || j >= nx)
+        return;
+    norm_data_transpose[i + j * ny] = norm_data[j + i * nx];
+}
+
 void correlate(int ny, int nx, const float* data, float* result) {
     float *interm_data= (float *)malloc(sizeof(float)*ny*nx);
-    float *interm_data_transpose= (float *)malloc(sizeof(float)*ny*nx);
     for (int row = 0; row < ny ; row ++)
     {
         float sum = 0;
@@ -56,35 +68,41 @@ void correlate(int ny, int nx, const float* data, float* result) {
         square_sum = sqrt(square_sum);
         for(int column = 0; column < nx; column++) {
             interm_data[column + row * nx] /= square_sum;
-            interm_data_transpose[row + column * ny] = interm_data[column + row * nx];
         }
     }
 
     // Allocate memory & copy data to GPU
-
     float* dGPU = NULL;
     float* dGPU_transpose = NULL;
+    float* rGPU = NULL;
     CHECK(cudaMalloc((void**)&dGPU, nx * ny * sizeof(float)));
     CHECK(cudaMalloc((void**)&dGPU_transpose, nx * ny * sizeof(float)));
-    float* rGPU = NULL;
     CHECK(cudaMalloc((void**)&rGPU, ny * ny * sizeof(float)));
+
     CHECK(cudaMemcpy(dGPU, interm_data, nx * ny * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(dGPU_transpose, interm_data_transpose, nx * ny * sizeof(float), cudaMemcpyHostToDevice));
 
-    // Run kernel
+    // Run kernel for transpose
+    {
+        dim3 dimBlock(32, 32);
+        dim3 dimGrid(divup(ny, dimBlock.x), divup(nx, dimBlock.y));
+        mykernel_transpose<<<dimGrid, dimBlock>>>(ny, nx, dGPU, dGPU_transpose);
+        CHECK(cudaGetLastError());
+    }
 
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(divup(ny, dimBlock.x), divup(ny, dimBlock.y));
-    mykernel<<<dimGrid, dimBlock>>>(ny, nx, dGPU, dGPU_transpose, rGPU);
-    CHECK(cudaGetLastError());
+    // Run kernel for matrix multiplication
+    {
+        dim3 dimBlock(32, 32);
+        dim3 dimGrid(divup(ny, dimBlock.x), divup(ny, dimBlock.y));
+        mykernel<<<dimGrid, dimBlock>>>(ny, nx, dGPU, dGPU_transpose, rGPU);
+        CHECK(cudaGetLastError());
+    }
+
 
     // Copy data back to CPU & release memory
-
     CHECK(cudaMemcpy(result, rGPU, ny * ny * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaFree(dGPU));
     CHECK(cudaFree(dGPU_transpose));
     CHECK(cudaFree(rGPU));
 
     free(interm_data);
-    free(interm_data_transpose);
 }
