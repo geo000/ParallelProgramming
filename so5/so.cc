@@ -5,26 +5,17 @@
 #include <stdio.h>
 #include<iostream> 
 using namespace std;
-data_t middleOfThree(data_t a, data_t b, data_t c) 
+data_t median(data_t first, data_t middle, data_t last) 
 { 
-    // x is positive if a is greater than b.  
-    // x is negative if b is greater than a. 
-    data_t x = a - b; 
-  
-    data_t y = b - c;  // Similar to x 
-    data_t z = a - c;  // Similar to x and y. 
-  
-    // Checking if b is middle (x and y both 
-    // are positive) 
+    data_t x = first - middle; 
+    data_t y = middle - last;  
+    data_t z = first - last; 
     if (x * y > 0) 
-        return b; 
-  
-    // Checking if c is middle (x and z both 
-    // are positive) 
+        return middle; 
     else if (x * z > 0) 
-        return c; 
+        return last; 
     else
-        return a; 
+        return first; 
 } 
 
 void quicksort(data_t* first, data_t* last, int max_thread){
@@ -35,14 +26,16 @@ void quicksort(data_t* first, data_t* last, int max_thread){
         sort(first, last+1);
         return;
     }
-    data_t pivot = middleOfThree(*first, *(last-(last-first)/2), *last);
+    data_t pivot = median(*first, *(last-(last-first)/2), *last);
 
 
     /*
         PIVOT CHOOSING METHODS
         <-------------------->
-            1. time = 2.84s - TRIAL AND ERROR#1 -->  *(last-(last-first)/2);
-            2. time = 2.99s - MEDIAN            -->  middleOfThree(*first, *(last-(last-first)/2), *last);
+            1. time = 2.79s - MEDIAN            -->  median(*first, *(last-(last-first)/2), *last);
+
+            2. time = 2.84s - TRIAL AND ERROR#1 -->  *(last-(last-first)/2);
+
             3. time = 4.8s  - RANDOM            --> *(first + rand() % (last - first));
         <-------------------->
     */
