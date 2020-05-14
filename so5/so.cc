@@ -7,13 +7,13 @@
 
 void quicksort(data_t* first, data_t* last, int max_thread){
 
-    // if number of threads < 2 or number of elements < 3
+    // if number of threads < 2 or number of elements <= 2
     if (max_thread < 2 || (last-first) < 2)
     {
         std::sort(first, last+1);
         return;
     }
-    data_t pivot = *(first + rand() % (last - first));
+    data_t pivot = *last;
 
     // elements < pivot : [first, it] 'it' is the pivot
     data_t* it = std::partition(first, last + 1, [pivot](data_t element){ return element < pivot; });
