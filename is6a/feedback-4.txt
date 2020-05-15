@@ -1,0 +1,7 @@
+0
+
+Could you vectorize this approach?
+
+--
+Grading by:
+jukka
