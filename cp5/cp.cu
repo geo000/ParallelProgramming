@@ -29,11 +29,11 @@ static inline void check(cudaError_t err, const char* context) {
 #define BLOCK_SIZE 32
 
 __global__ void mykernel(int ny, int nx, int nn_padding, float* norm_data, float* norm_data_transpose, float* result) {
-
+    if(blockIdx.x > blockIdx.y) return; 
     __shared__ float norm_data_shared [BLOCK_SIZE][BLOCK_SIZE];
     __shared__ float norm_data_transpose_shared[BLOCK_SIZE][BLOCK_SIZE];
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
     float sum = 0;
 
     for (int tileNUM = 0; tileNUM < gridDim.x; tileNUM++) {
