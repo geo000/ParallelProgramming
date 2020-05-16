@@ -30,22 +30,23 @@ static inline void check(cudaError_t err, const char* context) {
 
 __global__ void mykernel(int ny, int nx, int nn_padding, float* norm_data, float* norm_data_transpose, float* result) {
     if(blockIdx.x > blockIdx.y) return; 
-    __shared__ float norm_data_shared [BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float norm_data_shared[BLOCK_SIZE][BLOCK_SIZE];
     __shared__ float norm_data_transpose_shared[BLOCK_SIZE][BLOCK_SIZE];
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     float sum = 0;
 
-    for (int tileNUM = 0; tileNUM < gridDim.x; tileNUM++) {
-        int j = tileNUM * BLOCK_SIZE + threadIdx.x;
-        int i = tileNUM * BLOCK_SIZE + threadIdx.y;
+    for (int mozaik_number = 0; mozaik_number < gridDim.x; mozaik_number++)
+    {
+        int j = mozaik_number * BLOCK_SIZE + threadIdx.x;
+        int i = mozaik_number * BLOCK_SIZE + threadIdx.y;
 
         norm_data_shared[threadIdx.y][threadIdx.x] = norm_data[row * nn_padding + j];
         norm_data_transpose_shared[threadIdx.y][threadIdx.x] = norm_data_transpose[i * nn_padding + col];
         __syncthreads();
 
-        for (int k = 0; k < BLOCK_SIZE; k++) {
-
+        for (int k = 0; k < BLOCK_SIZE; k++)
+        {
             sum += norm_data_shared[threadIdx.y][k] * norm_data_transpose_shared[k][threadIdx.x];
         }
         __syncthreads();
@@ -56,7 +57,6 @@ __global__ void mykernel(int ny, int nx, int nn_padding, float* norm_data, float
 __global__ void mykernel_transpose(int nn_padding, float* norm_data, float* norm_data_transpose) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
-    if (i >= nn_padding || j >= nn_padding) return;
     norm_data_transpose[i + j * nn_padding] = norm_data[j + i * nn_padding];
 }
 
