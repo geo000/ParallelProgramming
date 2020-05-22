@@ -11,6 +11,10 @@
 #include <iostream>
 #include <algorithm> 
 
+static inline int divup(int a, int b) {
+    return (a + b - 1)/b;
+}
+
 static inline void check(cudaError_t err, const char* context) {
     if (err != cudaSuccess) {
         std::cerr << "CUDA error: " << context << ": "
@@ -20,8 +24,8 @@ static inline void check(cudaError_t err, const char* context) {
 }
 
 __global__ void mykernel(int* coordinates, float* maximum, const float* simplified_sum_data, int nx, int ny) {
-    int height = blockIdx.x;
-    int width = blockIdx.y;
+    int height = threadIdx.x + blockIdx.x * blockDim.x;
+    int width = threadIdx.y + blockIdx.y * blockDim.y;
     if (height > ny || width > nx || height == 0 || width == 0) return;
     int nx_plus = nx+1;
     float allpixels = nx*ny;
@@ -84,8 +88,8 @@ Result segment(int ny, int nx, const float* data) {
     CHECK(cudaMemcpy(dGPU, simplified_sum_data.data(), nx_plus * ny_plus * sizeof(float), cudaMemcpyHostToDevice));
 
     // Run kernel
-    dim3 dimBlock(1, 1);
-    dim3 dimGrid(ny+1, nx+1);
+    dim3 dimBlock(8, 8);
+    dim3 dimGrid(divup(ny_plus, dimBlock.x), divup(nx_plus, dimBlock.y));
     mykernel<<<dimGrid, dimBlock>>>(rGPU1, rGPU2, dGPU, nx, ny);
     CHECK(cudaGetLastError());
 
