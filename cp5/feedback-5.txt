@@ -1,0 +1,7 @@
+0
+
+Good! For further speedup, you could try to move normalization to the GPU side?
+
+--
+Grading by:
+jukka
